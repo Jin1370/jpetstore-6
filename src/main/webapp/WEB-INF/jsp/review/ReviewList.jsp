@@ -44,11 +44,11 @@
             <label style="font-weight: bold; margin-right: 10px;">Select Pet Type:</label>
             <stripes:select name="petType" onchange="this.form.submit()">
                 <stripes:option value="">All Pets</stripes:option>
-                <stripes:option value="CATS">Cats</stripes:option>
-                <stripes:option value="DOGS">Dogs</stripes:option>
-                <stripes:option value="BIRDS">Birds</stripes:option>
-                <stripes:option value="FISH">Fish</stripes:option>
-                <stripes:option value="REPTILES">Reptiles</stripes:option>
+                <stripes:option value="Cat">Cats</stripes:option>
+                <stripes:option value="Dog">Dogs</stripes:option>
+                <stripes:option value="Bird">Birds</stripes:option>
+                <stripes:option value="Fish">Fish</stripes:option>
+                <stripes:option value="Reptile">Reptiles</stripes:option>
             </stripes:select>
             <stripes:submit name="listReviews" value="Filter" style="display:none;"/>
         </stripes:form>
@@ -63,6 +63,7 @@
             <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="listReviews"
                           style="display:inline-block; padding: 5px 10px; margin: 3px; border-radius: 15px; text-decoration: none; border: 1px solid #ccc; background-color: ${empty actionBean.selectedTag ? '#666' : '#fff'}; color: ${empty actionBean.selectedTag ? '#fff' : '#333'};">
                 <stripes:param name="petType" value="${actionBean.petType}"/>
+                <stripes:param name="selectedTag" value=""/>
                 All Tags
             </stripes:link>
 
