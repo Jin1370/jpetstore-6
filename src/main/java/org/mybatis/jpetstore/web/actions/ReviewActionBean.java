@@ -173,10 +173,9 @@ public class ReviewActionBean extends AbstractActionBean {
     // 소수점 한자리까지 반올림
     this.overallRating = Math.round((totalScore / reviews.size()) * 10.0) / 10.0;
 
-    String petName = (petType == null || petType.isEmpty()) ? "All Pets" : petType;
-    this.categorySummary = String.format(
-        "Users gave '%s' an average rating of %.1f/5.0 based on %d reviews. %d reviews were positive.", petName,
-        overallRating, reviews.size(), positiveCount);
+    // AI 요약 생성 호출
+    String currentPetType = (petType == null || petType.isEmpty()) ? "All Pets" : petType;
+    this.categorySummary = reviewService.getAiSummaryForCategory(currentPetType, reviews);
   }
 
   // 태그 추출 로직

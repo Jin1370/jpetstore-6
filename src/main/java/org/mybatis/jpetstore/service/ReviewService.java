@@ -26,6 +26,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.mybatis.jpetstore.domain.Review;
 import org.mybatis.jpetstore.mapper.ReviewMapper;
@@ -46,6 +49,9 @@ public class ReviewService {
 
   @Value("${openai.model:gpt-3.5-turbo}")
   private String model;
+
+  // [추가] 간단한 메모리 캐시 (Key: 펫종류, Value: 요약문)
+  private final Map<String, String> categorySummaryCache = new ConcurrentHashMap<>();
 
   public ReviewService(ReviewMapper reviewMapper) {
     this.reviewMapper = reviewMapper;
@@ -68,6 +74,72 @@ public class ReviewService {
   }
 
   /**
+   * [추가] 펫 종류별 종합 요약 (AI 생성) 리뷰가 많으면 비용 절약을 위해 최신 10개만 분석합니다.
+   */
+  public String getAiSummaryForCategory(String petType, List<Review> reviews) {
+    // 1. 리뷰가 없으면 기본 메시지 리턴
+    if (reviews == null || reviews.isEmpty()) {
+      return "No reviews available for analysis.";
+    }
+
+    // 2. 캐시에 저장된 요약이 있으면 그거 사용 (비용 절약)
+    // (실제 운영환경에서는 일정 시간마다 갱신하는 로직이 필요하지만, 여기선 캐시가 있으면 무조건 사용)
+    if (categorySummaryCache.containsKey(petType)) {
+      return categorySummaryCache.get(petType);
+    }
+
+    try {
+      // 3. 리뷰 내용 합치기 (최신 10개만)
+      String combinedReviews = reviews.stream().limit(10) // 토큰 절약을 위해 10개만 끊음
+          .map(r -> "- " + r.getContent()).collect(Collectors.joining("\n"));
+
+      String prompt = String.format(
+          "Here are some reviews for '%s'. Summarize the overall user feedback in 1-2 sentences in English. "
+              + "Highlight common pros and cons if any. " + "Do NOT use JSON format, just plain text.\n\nReviews:\n%s",
+          petType, combinedReviews);
+
+      // 4. OpenAI 호출 (기존 로직 재사용하거나 새로 작성)
+      String aiSummary = callOpenAiForText(prompt);
+
+      // 5. 캐시에 저장 후 리턴
+      categorySummaryCache.put(petType, aiSummary);
+      return aiSummary;
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      return "AI Summary unavailable due to error.";
+    }
+  }
+
+  /**
+   * [추가] 단순 텍스트 응답을 위한 OpenAI 호출 헬퍼 메서드
+   */
+  private String callOpenAiForText(String prompt) throws Exception {
+    String apiUrl = "https://api.openai.com/v1/chat/completions";
+
+    ObjectNode rootNode = objectMapper.createObjectNode();
+    rootNode.put("model", model);
+
+    ArrayNode messagesArray = rootNode.putArray("messages");
+    ObjectNode messageNode = messagesArray.addObject();
+    messageNode.put("role", "user");
+    messageNode.put("content", prompt);
+
+    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl)).header("Content-Type", "application/json")
+        .header("Authorization", "Bearer " + apiKey).POST(HttpRequest.BodyPublishers.ofString(rootNode.toString()))
+        .build();
+
+    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() == 200) {
+      JsonNode responseNode = objectMapper.readTree(response.body());
+      return responseNode.path("choices").get(0).path("message").path("content").asText();
+    } else {
+      throw new RuntimeException("API Error: " + response.statusCode());
+    }
+  }
+
+  /**
    * 리뷰 추가 (OpenAI 분석 포함)
    */
   @Transactional
@@ -84,8 +156,9 @@ public class ReviewService {
     }
 
     // 2. 데이터베이스에 저장
-    // 주의: Mapper 인터페이스에 정의된 이름은 보통 insertReview입니다.
     reviewMapper.addReview(review);
+    categorySummaryCache.remove(review.getPetType());
+    categorySummaryCache.remove("All Pets");
   }
 
   /**
@@ -96,17 +169,15 @@ public class ReviewService {
 
     // 프롬프트 작성
     String prompt = String.format(
-            "Analyze the following pet store review for a '%s'. " +
-                    "Return a JSON object with strictly these three keys: " +
-                    "'summary' (a brief summary in English, max 15 words), " +
-                    "'sentiment' (choose strictly one: 'Positive', 'Neutral', 'Negative'), " +
-                    "and 'tags' (3-5 comma-separated keywords in English, EACH starting with '#', like '#Cute,#Active'). " +
-                    "IMPORTANT: Do NOT include the pet type ('%s') itself as a tag. " +
-                    "Do not include Markdown formatting (```json). " +
-                    "\n\nReview Content: \"%s\"",
-            review.getPetType(), // 첫 번째 %s: 문맥 제공
-            review.getPetType(), // 두 번째 %s: 태그 제외 대상 지정
-            review.getContent()  // 세 번째 %s: 리뷰 본문
+        "Analyze the following pet store review for a '%s'. " + "Return a JSON object with strictly these three keys: "
+            + "'summary' (a brief summary in English, max 15 words), "
+            + "'sentiment' (choose strictly one: 'Positive', 'Neutral', 'Negative'), "
+            + "and 'tags' (3-5 comma-separated keywords in English, EACH starting with '#', like '#Cute,#Active'). "
+            + "IMPORTANT: Do NOT include the pet type ('%s') itself as a tag. "
+            + "Do not include Markdown formatting (```json). " + "\n\nReview Content: \"%s\"",
+        review.getPetType(), // 첫 번째 %s: 문맥 제공
+        review.getPetType(), // 두 번째 %s: 태그 제외 대상 지정
+        review.getContent() // 세 번째 %s: 리뷰 본문
     );
 
     // 요청 바디 생성 (JSON)
@@ -157,6 +228,18 @@ public class ReviewService {
 
   @Transactional
   public void deleteReview(int reviewId) {
-    reviewMapper.deleteReview(reviewId);
+    // 삭제할 리뷰의 정보를 먼저 알아야 어떤 캐시를 지울지 알 수 있음
+    Review target = reviewMapper.getReview(reviewId);
+
+    if (target != null) {
+      reviewMapper.deleteReview(reviewId);
+
+      // ⭐ [추가] 캐시 초기화
+      // 삭제된 리뷰의 카테고리 캐시 삭제
+      categorySummaryCache.remove(target.getPetType());
+
+      // 전체 요약 캐시 삭제
+      categorySummaryCache.remove("All Pets");
+    }
   }
 }
