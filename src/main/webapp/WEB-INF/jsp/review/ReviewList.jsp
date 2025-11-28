@@ -27,35 +27,58 @@
 
 <div id="Catalog">
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h2>Pet Adoption Reviews</h2>
-        <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="newReviewForm" style="font-weight:bold;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+        <div>
+            <h2>Pet Adoption Reviews</h2>
+            <div style="font-size: 1.5em; color: #ff9900; font-weight: bold;">
+                ★ ${actionBean.overallRating} <span style="font-size: 0.6em; color: #555;">/ 5.0</span>
+            </div>
+        </div>
+        <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="newReviewForm" style="font-weight:bold; font-size: 1.1em;">
             Write a Review
         </stripes:link>
     </div>
 
-    <div style="margin-bottom: 20px; background-color: #f5f5f5; padding: 10px; border-radius: 5px;">
+    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
         <stripes:form beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" method="get">
-            <b>Filter:</b>
-            Pet Type:
-            <stripes:select name="petType">
-                <stripes:option value="">All</stripes:option>
+            <label style="font-weight: bold; margin-right: 10px;">Select Pet Type:</label>
+            <stripes:select name="petType" onchange="this.form.submit()">
+                <stripes:option value="">All Pets</stripes:option>
                 <stripes:option value="CATS">Cats</stripes:option>
                 <stripes:option value="DOGS">Dogs</stripes:option>
                 <stripes:option value="BIRDS">Birds</stripes:option>
                 <stripes:option value="FISH">Fish</stripes:option>
                 <stripes:option value="REPTILES">Reptiles</stripes:option>
             </stripes:select>
-
-            Keyword:
-            <stripes:text name="keyword" size="20"/>
-
-            <stripes:submit name="listReviews" value="Search" />
+            <stripes:submit name="listReviews" value="Filter" style="display:none;"/>
         </stripes:form>
+
+        <div style="margin-top: 15px; padding: 10px; background-color: #eef; border-left: 4px solid #0066cc;">
+            <strong>Summary:</strong> ${actionBean.categorySummary}
+        </div>
+
+        <div style="margin-top: 15px;">
+            <div style="margin-bottom: 5px; font-weight:bold;">Filter by Tags:</div>
+
+            <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="listReviews"
+                          style="display:inline-block; padding: 5px 10px; margin: 3px; border-radius: 15px; text-decoration: none; border: 1px solid #ccc; background-color: ${empty actionBean.selectedTag ? '#666' : '#fff'}; color: ${empty actionBean.selectedTag ? '#fff' : '#333'};">
+                <stripes:param name="petType" value="${actionBean.petType}"/>
+                All Tags
+            </stripes:link>
+
+            <c:forEach var="tag" items="${actionBean.uniqueTags}">
+                <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="listReviews"
+                              style="display:inline-block; padding: 5px 10px; margin: 3px; border-radius: 15px; text-decoration: none; border: 1px solid #ccc; background-color: ${actionBean.selectedTag == tag ? '#0066cc' : '#fff'}; color: ${actionBean.selectedTag == tag ? '#fff' : '#0066cc'};">
+                    <stripes:param name="petType" value="${actionBean.petType}"/>
+                    <stripes:param name="selectedTag" value="${tag}"/>
+                    ${tag}
+                </stripes:link>
+            </c:forEach>
+        </div>
     </div>
 
     <table>
-        <tr>
+        <tr style="background-color: #eee;">
             <th>Date</th>
             <th>User</th>
             <th>Pet</th>
@@ -67,14 +90,14 @@
             <c:when test="${empty actionBean.reviewList}">
                 <tr>
                     <td colspan="5" style="text-align: center; padding: 20px;">
-                        No reviews found.
+                        No reviews found for this selection.
                     </td>
                 </tr>
             </c:when>
             <c:otherwise>
                 <c:forEach var="review" items="${actionBean.reviewList}">
                     <tr style="vertical-align: top;">
-                        <td>
+                        <td style="white-space:nowrap;">
                             <fmt:formatDate value="${review.createdDate}" pattern="yyyy-MM-dd" />
                         </td>
 
@@ -88,20 +111,36 @@
 
                         <td>
                             <c:if test="${not empty review.summary}">
-                                <strong>"<c:out value="${review.summary}" />"</strong><br/>
+                                <div style="font-weight: bold; margin-bottom: 6px; color: #333;">
+                                    "<c:out value="${review.summary}" />"
+                                </div>
                             </c:if>
-                            <c:out value="${review.content}" />
+
+                            <div style="font-size: 1.0em; margin-bottom: 8px; color: #555;">
+                                <c:out value="${review.content}" />
+                            </div>
 
                             <c:if test="${not empty review.tags}">
-                                <br/><span style="color:#666; font-size:0.9em;">Tags: <c:out value="${review.tags}"/></span>
+                                <div style="font-size: 0.85em; color: #666;">
+                                    <c:forTokens items="${review.tags}" delims="," var="t">
+                                        <span style="background:#f0f0f0; padding:2px 6px; border-radius:4px; margin-right:4px;">${t}</span>
+                                    </c:forTokens>
+                                </div>
                             </c:if>
                         </td>
 
-                        <td>
+                        <td style="text-align:center;">
                             <c:choose>
-                                <c:when test="${review.sentiment == 'Positive'}"><font color="green">Positive</font></c:when>
-                                <c:when test="${review.sentiment == 'Negative'}"><font color="red">Negative</font></c:when>
-                                <c:otherwise>Neutral</c:otherwise>
+                                <c:when test="${review.sentiment == 'Positive'}">
+                                    <span style="color:green; font-weight:bold;">😊 5.0</span>
+                                </c:when>
+                                <c:when test="${review.sentiment == 'Neutral'}">
+                                    <span style="color:gray; font-weight:bold;">😐 3.0</span>
+                                </c:when>
+                                <c:when test="${review.sentiment == 'Negative'}">
+                                    <span style="color:red; font-weight:bold;">😟 1.0</span>
+                                </c:when>
+                                <c:otherwise>-</c:otherwise>
                             </c:choose>
                         </td>
                     </tr>
