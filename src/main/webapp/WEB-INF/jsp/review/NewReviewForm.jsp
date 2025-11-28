@@ -15,49 +15,59 @@
        limitations under the License.
 
 --%>
-
-<!-- File: NewReviewForm.jsp -->
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8" />
-    <title>새 후기 작성 - JPetstore</title>
-    <link rel="stylesheet" href="/wbapp/css/jpetstore.css" />
-    <style>
-        .container{max-width:700px;margin:20px auto;padding:10px}
-        label{display:block;margin-top:10px}
-        textarea{width:100%;height:200px}
-    </style>
-</head>
-<body>
-<div class="container">
-    <h2>새 후기 작성</h2>
-    <form action="/review/new" method="post">
-        <label>작성자 (UserId)
-            <input type="text" name="userId" required />
-        </label>
+<%@ include file="../common/IncludeTop.jsp"%>
 
-        <label>반려동물 종류
-            <select name="petType" required>
-                <option value="고양이">고양이</option>
-                <option value="강아지">강아지</option>
-                <option value="기타">기타</option>
-            </select>
-        </label>
-
-        <label>후기 내용
-            <textarea name="content" required></textarea>
-        </label>
-
-        <div style="margin-top:12px">
-            <button type="submit">등록</button>
-            <a href="/review/list" style="margin-left:12px">취소</a>
-        </div>
-    </form>
-
-    <p style="margin-top:18px;font-size:0.9em;color:#666">참고: 리뷰 등록 시 서버에서 AI 요약·감정·태그가 비동기적으로 처리되어 업데이트됩니다. 처리 중에는 요약/태그가 비어있을 수 있습니다.</p>
+<div id="BackLink">
+    <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="listReviews">
+        Return to Review List
+    </stripes:link>
 </div>
-</body>
-</html>
+
+<div id="Catalog">
+
+    <stripes:form beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean">
+
+        <h3>Write a New Review</h3>
+
+        <table>
+            <tr>
+                <td>Username:</td>
+                <td>
+                    <stripes:text name="review.username" size="20" />
+                </td>
+            </tr>
+            <tr>
+                <td>Pet Type:</td>
+                <td>
+                    <stripes:select name="review.petType">
+                        <stripes:option value="Cat">Cat</stripes:option>
+                        <stripes:option value="Dog">Dog</stripes:option>
+                        <stripes:option value="Bird">Bird</stripes:option>
+                        <stripes:option value="Fish">Fish</stripes:option>
+                        <stripes:option value="Reptile">Reptile</stripes:option>
+                    </stripes:select>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top; padding-top: 5px;">Content:</td>
+                <td>
+                    <stripes:textarea name="review.content" cols="60" rows="8" />
+                </td>
+            </tr>
+        </table>
+
+        <div style="margin-top: 10px; margin-bottom: 20px;">
+            <stripes:submit name="addReview" value="Submit Review" />
+        </div>
+
+    </stripes:form>
+
+    <div style="background-color: #ffffcc; padding: 10px; border: 1px solid #e6e6e6; color: #555; font-size: 0.9em;">
+        <strong>Note:</strong> AI Summary, Sentiment Analysis, and Tags will be processed asynchronously after submission.
+        It may take a moment for them to appear in the list.
+    </div>
+
+</div>
+
+<%@ include file="../common/IncludeBottom.jsp"%>
