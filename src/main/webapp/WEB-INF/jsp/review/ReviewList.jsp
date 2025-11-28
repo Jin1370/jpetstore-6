@@ -143,13 +143,13 @@
                         <td style="text-align:center;">
                             <c:choose>
                                 <c:when test="${review.sentiment == 'Positive'}">
-                                    <span style="color:green; font-weight:bold;">😊 5.0</span>
+                                    <span style="color:green; font-weight:bold;">😊 Positive</span>
                                 </c:when>
                                 <c:when test="${review.sentiment == 'Neutral'}">
-                                    <span style="color:gray; font-weight:bold;">😐 3.0</span>
+                                    <span style="color:gray; font-weight:bold;">😐 Neutral</span>
                                 </c:when>
                                 <c:when test="${review.sentiment == 'Negative'}">
-                                    <span style="color:red; font-weight:bold;">😟 1.0</span>
+                                    <span style="color:red; font-weight:bold;">😟 Negative</span>
                                 </c:when>
                                 <c:otherwise>-</c:otherwise>
                             </c:choose>
