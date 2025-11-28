@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+       Copyright 2010-2025 the original author or authors.
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+          https://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.mybatis.jpetstore.mapper.ReviewMapper">
+
+    <!-- Enable MyBatis Second-Level Cache -->
+    <cache />
+
+    <!-- ============================= -->
+    <!--   SELECT: Single Review by ID -->
+    <!-- ============================= -->
+    <select id="getReview" resultType="Review">
+        SELECT
+        review_id AS reviewId,
+        username,
+        pet_type AS petType,
+        content,
+        summary,
+        sentiment,
+        tags,
+        created_date AS createdDate
+        FROM review
+        WHERE review_id = #{reviewId}
+    </select>
+
+
+    <!-- ============================= -->
+    <!--   SELECT: getAllReviews         -->
+    <!-- ============================= -->
+    <select id="getAllReviews" resultType="Review">
+        SELECT
+        review_id AS reviewId,
+        username,
+        pet_type AS petType,
+        content,
+        summary,
+        sentiment,
+        tags,
+        created_date AS createdDate
+        FROM review
+        ORDER BY created_date DESC
+    </select>
+
+
+    <!-- ============================= -->
+    <!--   INSERT: New Review          -->
+    <!-- ============================= -->
+    <insert id="insertReview" parameterType="Review" useGeneratedKeys="true" keyProperty="reviewId">
+        INSERT INTO review
+        (username, pet_type, content, summary, sentiment, tags)
+        VALUES
+        (#{username}, #{petType}, #{content}, #{summary}, #{sentiment}, #{tags})
+    </insert>
+
+
+    <!-- ============================= -->
+    <!--   UPDATE: Review Summary/AI   -->
+    <!-- ============================= -->
+    <update id="updateReviewAI" parameterType="Review">
+        UPDATE review SET
+        summary = #{summary},
+        sentiment = #{sentiment},
+        tags = #{tags}
+        WHERE review_id = #{reviewId}
+    </update>
+
+
+    <!-- ============================= -->
+    <!--   DELETE: Review              -->
+    <!-- ============================= -->
+    <delete id="deleteReview" parameterType="int">
+        DELETE FROM review
+        WHERE review_id = #{reviewId}
+    </delete>
+
+</mapper>

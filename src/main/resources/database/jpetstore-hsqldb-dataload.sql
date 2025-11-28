@@ -1,5 +1,5 @@
 --
---    Copyright 2010-2022 the original author or authors.
+--    Copyright 2010-2025 the original author or authors.
 --
 --    Licensed under the Apache License, Version 2.0 (the "License");
 --    you may not use this file except in compliance with the License.
@@ -13,6 +13,11 @@
 --    See the License for the specific language governing permissions and
 --    limitations under the License.
 --
+
+-- 기존 더미 데이터 로드
+--RUNSCRIPT FROM 'src/main/resources/database/jpetstore-hsqldb-data.sql';
+--------------------------
+
 
 INSERT INTO sequence VALUES('ordernum', 1000);
 
@@ -115,3 +120,27 @@ INSERT INTO inventory (itemid, qty ) VALUES ('EST-26',10000);
 INSERT INTO inventory (itemid, qty ) VALUES ('EST-27',10000);
 INSERT INTO inventory (itemid, qty ) VALUES ('EST-28',10000);
 
+
+-- ==================================
+-- Review 테이블 초기 더미 데이터
+-- ==================================
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
+VALUES
+    ('j2ee', 'Dog', 'My corgi is very active and friendly!', 'Corgi is active and friendly', 'Positive', '#Active,#Friendly');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
+VALUES
+    ('alice', 'Cat', 'My cat was shy at first but now very affectionate.', 'Cat became affectionate', 'Positive', '#Gentle,#Affectionate');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
+VALUES
+    ('bob', 'Bird', 'The parrot is noisy and sometimes bites.', 'Parrot is noisy and bites sometimes', 'Neutral', '#Noisy,#Caution');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
+VALUES
+    ('carol', 'Dog', 'The dog took time to adapt to our home, but now loves playing.', 'Dog adapted well and loves playing', 'Positive', '#Adaptable,#Playful');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
+VALUES
+    ('dave', 'Cat', 'Our kitten scratches furniture a lot.', 'Kitten scratches furniture', 'Negative', '#FurnitureDamage,#Caution');
