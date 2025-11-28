@@ -39,6 +39,7 @@ public class ReviewActionBean extends AbstractActionBean {
   private static final long serialVersionUID = 1L;
   private static final String REVIEW_LIST = "/WEB-INF/jsp/review/ReviewList.jsp";
   private static final String NEW_REVIEW = "/WEB-INF/jsp/review/NewReviewForm.jsp";
+  private static final String EDIT_REVIEW = "/WEB-INF/jsp/review/EditReviewForm.jsp";
 
   @SpringBean
   private transient ReviewService reviewService;
@@ -239,4 +240,42 @@ public class ReviewActionBean extends AbstractActionBean {
 
     return new RedirectResolution(ReviewActionBean.class, "listReviews");
   }
+
+  // 리뷰 수정
+  public Resolution editReviewForm() {
+    // 1. 로그인 체크
+    if (!isLoggedIn())
+      return new RedirectResolution(AccountActionBean.class, "signonForm");
+
+    // 2. 수정할 리뷰 가져오기
+    review = reviewService.getReview(review.getReviewId());
+
+    // 3. 본인 글인지 확인
+    String currentUser = getLoggedInUsername();
+    if (review == null || !currentUser.equals(review.getUsername())) {
+      setMessage("You can only edit your own reviews.");
+      return new RedirectResolution(ReviewActionBean.class, "listReviews");
+    }
+
+    return new ForwardResolution(EDIT_REVIEW);
+  }
+
+  /**
+   * [추가] 리뷰 수정 실행
+   */
+  public Resolution updateReview() {
+    if (!isLoggedIn())
+      return new RedirectResolution(AccountActionBean.class, "signonForm");
+
+    // 본인 확인 로직 (안전을 위해 한 번 더 체크)
+    Review original = reviewService.getReview(review.getReviewId());
+    if (original != null && getLoggedInUsername().equals(original.getUsername())) {
+      // 작성자는 변경되지 않도록 원본 데이터나 세션 ID 유지
+      review.setUsername(getLoggedInUsername());
+      reviewService.updateReview(review);
+    }
+
+    return new RedirectResolution(ReviewActionBean.class, "listReviews");
+  }
+
 }

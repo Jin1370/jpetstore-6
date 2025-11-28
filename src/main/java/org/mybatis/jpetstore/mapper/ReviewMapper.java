@@ -32,4 +32,7 @@ public interface ReviewMapper {
 
   // 리뷰 삭제
   void deleteReview(int reviewId);
+
+  // 리뷰 수정
+  void updateReview(Review review);
 }

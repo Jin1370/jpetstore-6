@@ -81,24 +81,30 @@
 
     <table>
         <tr style="background-color: #eee;">
+            <th style="padding:10px; width:50px; text-align:center;">No.</th>
             <th style="padding:10px;">Date</th>
             <th style="padding:10px;">User</th>
             <th style="padding:10px;">Pet</th>
             <th style="padding:10px;">Review Content</th>
-            <th style="padding:10px; text-align:center;">Sentiment</th>
+            <th style="padding:10px; text-align:center; min-width: 100px;">Sentiment</th>
         </tr>
 
         <c:choose>
             <c:when test="${empty actionBean.reviewList}">
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 30px; color: #777;">
+                    <td colspan="6" style="text-align: center; padding: 30px; color: #777;">
                         No reviews found for this selection.
                     </td>
                 </tr>
             </c:when>
             <c:otherwise>
-                <c:forEach var="review" items="${actionBean.reviewList}">
+                <c:forEach var="review" items="${actionBean.reviewList}" varStatus="status">
                     <tr style="vertical-align: top; border-bottom: 1px solid #f0f0f0;">
+
+                        <td style="padding:12px 10px; text-align:center; color:#888; font-weight:bold;">
+                                ${status.count}
+                        </td>
+
                         <td style="white-space:nowrap; padding:12px 10px; color:#666; font-size:0.9em;">
                             <fmt:formatDate value="${review.createdDate}" pattern="yyyy-MM-dd" />
                         </td>
@@ -115,7 +121,7 @@
                             <c:if test="${not empty review.summary}">
                                 <div style="margin-bottom: 6px;">
                                     <span style="font-size: 0.75em; color: #888; border: 1px solid #ddd; padding: 1px 4px; border-radius: 3px; background-color: #fff; margin-right: 4px;">
-                                        [Summary by AI]
+                                        [Summarized by AI]
                                     </span>
                                     <span style="font-weight: bold; color: #333;">
                                         "<c:out value="${review.summary}" />"
@@ -137,6 +143,13 @@
 
                             <c:if test="${not empty sessionScope.accountBean.account.username and sessionScope.accountBean.account.username == review.username}">
                                 <div style="margin-top: 10px;">
+
+                                    <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="editReviewForm"
+                                                  style="color: #0066cc; font-size: 0.85em; text-decoration: none; border: 1px solid #0066cc; padding: 2px 6px; border-radius: 3px; margin-right: 5px;">
+                                        <stripes:param name="review.reviewId" value="${review.reviewId}"/>
+                                        Edit
+                                    </stripes:link>
+
                                     <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="deleteReview"
                                                   onclick="return confirm('Are you sure you want to delete this review?');"
                                                   style="color: #cc0000; font-size: 0.85em; text-decoration: none; border: 1px solid #cc0000; padding: 2px 6px; border-radius: 3px;">

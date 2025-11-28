@@ -50,7 +50,7 @@ public class ReviewService {
   @Value("${openai.model:gpt-3.5-turbo}")
   private String model;
 
-  // [추가] 간단한 메모리 캐시 (Key: 펫종류, Value: 요약문)
+  // 메모리 캐시 (Key: 펫종류, Value: 요약문)
   private final Map<String, String> categorySummaryCache = new ConcurrentHashMap<>();
 
   public ReviewService(ReviewMapper reviewMapper) {
@@ -59,38 +59,27 @@ public class ReviewService {
     this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
   }
 
-  /**
-   * 모든 리뷰 조회
-   */
   public List<Review> getAllReviews() {
     return reviewMapper.getAllReviews();
   }
 
-  /**
-   * 특정 리뷰 조회
-   */
   public Review getReview(int reviewId) {
     return reviewMapper.getReview(reviewId);
   }
 
-  /**
-   * [추가] 펫 종류별 종합 요약 (AI 생성) 리뷰가 많으면 비용 절약을 위해 최신 10개만 분석합니다.
-   */
   public String getAiSummaryForCategory(String petType, List<Review> reviews) {
-    // 1. 리뷰가 없으면 기본 메시지 리턴
     if (reviews == null || reviews.isEmpty()) {
       return "No reviews available for analysis.";
     }
 
-    // 2. 캐시에 저장된 요약이 있으면 그거 사용 (비용 절약)
-    // (실제 운영환경에서는 일정 시간마다 갱신하는 로직이 필요하지만, 여기선 캐시가 있으면 무조건 사용)
+    // 캐시에 저장된 요약이 있으면 사용
     if (categorySummaryCache.containsKey(petType)) {
       return categorySummaryCache.get(petType);
     }
 
     try {
-      // 3. 리뷰 내용 합치기 (최신 10개만)
-      String combinedReviews = reviews.stream().limit(10) // 토큰 절약을 위해 10개만 끊음
+      // 리뷰 내용 합치기 (최신 10개만)
+      String combinedReviews = reviews.stream().limit(10)
           .map(r -> "- " + r.getContent()).collect(Collectors.joining("\n"));
 
       String prompt = String.format(
@@ -98,10 +87,8 @@ public class ReviewService {
               + "Highlight common pros and cons if any. " + "Do NOT use JSON format, just plain text.\n\nReviews:\n%s",
           petType, combinedReviews);
 
-      // 4. OpenAI 호출 (기존 로직 재사용하거나 새로 작성)
+      // OpenAI 호출
       String aiSummary = callOpenAiForText(prompt);
-
-      // 5. 캐시에 저장 후 리턴
       categorySummaryCache.put(petType, aiSummary);
       return aiSummary;
 
@@ -111,9 +98,6 @@ public class ReviewService {
     }
   }
 
-  /**
-   * [추가] 단순 텍스트 응답을 위한 OpenAI 호출 헬퍼 메서드
-   */
   private String callOpenAiForText(String prompt) throws Exception {
     String apiUrl = "https://api.openai.com/v1/chat/completions";
 
@@ -139,9 +123,6 @@ public class ReviewService {
     }
   }
 
-  /**
-   * 리뷰 추가 (OpenAI 분석 포함)
-   */
   @Transactional
   public void addReview(Review review) {
     try {
@@ -161,9 +142,6 @@ public class ReviewService {
     categorySummaryCache.remove("All Pets");
   }
 
-  /**
-   * OpenAI API 호출 로직
-   */
   private void analyzeReviewWithAI(Review review) throws Exception {
     String apiUrl = "https://api.openai.com/v1/chat/completions";
 
@@ -172,7 +150,7 @@ public class ReviewService {
         "Analyze the following pet store review for a '%s'. " + "Return a JSON object with strictly these three keys: "
             + "'summary' (a brief summary in English, max 15 words), "
             + "'sentiment' (choose strictly one: 'Positive', 'Neutral', 'Negative'), "
-            + "and 'tags' (3-5 comma-separated keywords in English, EACH starting with '#', like '#Cute,#Active'). "
+            + "and 'tags' (max 2 comma-separated keywords in English, EACH starting with '#', like '#Cute,#Active'). "
             + "IMPORTANT: Do NOT include the pet type ('%s') itself as a tag. "
             + "Do not include Markdown formatting (```json). " + "\n\nReview Content: \"%s\"",
         review.getPetType(), // 첫 번째 %s: 문맥 제공
@@ -241,5 +219,24 @@ public class ReviewService {
       // 전체 요약 캐시 삭제
       categorySummaryCache.remove("All Pets");
     }
+  }
+
+  // 리뷰 수정
+  @Transactional
+  public void updateReview(Review review) {
+    // 1. 내용이 바뀌었으므로 AI 재분석 수행
+    try {
+      analyzeReviewWithAI(review);
+    } catch (Exception e) {
+      e.printStackTrace();
+      // 에러 시 기존 AI 데이터라도 유지하거나 초기화
+    }
+
+    // 2. DB 업데이트
+    reviewMapper.updateReview(review);
+
+    // 3. 캐시 초기화 (내용이 바뀌었으므로)
+    categorySummaryCache.remove(review.getPetType());
+    categorySummaryCache.remove("All Pets");
   }
 }

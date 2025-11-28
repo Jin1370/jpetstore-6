@@ -121,26 +121,78 @@ INSERT INTO inventory (itemid, qty ) VALUES ('EST-27',10000);
 INSERT INTO inventory (itemid, qty ) VALUES ('EST-28',10000);
 
 
--- ==================================
--- Review 테이블 초기 더미 데이터
--- ==================================
 
-INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
-VALUES
-    ('j2ee', 'Dog', 'My corgi is very active and friendly!', 'Corgi is active and friendly', 'Positive', '#Active,#Friendly');
+-- =======================================================
+-- Refined Test Data for Review Board (20 entries)
+-- 5 Pet Types x 4 Reviews each (Balanced Sentiment)
+-- Tags limited to max 2 per review
+-- =======================================================
 
-INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
-VALUES
-    ('alice', 'Cat', 'My cat was shy at first but now very affectionate.', 'Cat became affectionate', 'Positive', '#Gentle,#Affectionate');
+-- 1. DOGS
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('j2ee', 'Dog', 'I was hesitant about adopting a Golden Retriever because I live in a small house, but he has been an absolute blessing. He is incredibly patient with my toddler and learns tricks faster than any dog I have ever seen. Truly man''s best friend.', 'Golden Retriever is patient and great with kids', 'Positive', '#FamilyFriendly,#Smart');
 
-INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
-VALUES
-    ('bob', 'Bird', 'The parrot is noisy and sometimes bites.', 'Parrot is noisy and bites sometimes', 'Neutral', '#Noisy,#Caution');
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('ACID', 'Dog', 'This Bulldog might look grumpy, but he is the biggest sweetheart. He spends most of the day sleeping on the rug and snoring loudly. He requires very little exercise, making him the perfect companion for my relaxed lifestyle.', 'Bulldog is lazy and affectionate', 'Positive', '#Lazy,#Affectionate');
 
-INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
-VALUES
-    ('carol', 'Dog', 'The dog took time to adapt to our home, but now loves playing.', 'Dog adapted well and loves playing', 'Positive', '#Adaptable,#Playful');
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('alice', 'Dog', 'My Dalmation is beautiful, but oh my god, the energy level is insane. I have to take him for a 5km run every morning. If you are an active runner, this is the dog for you. If you like watching TV on the couch, look for another breed.', 'High energy dog for active owners only', 'Neutral', '#Active');
 
-INSERT INTO review (username, pet_type, content, summary, sentiment, tags)
-VALUES
-    ('dave', 'Cat', 'Our kitten scratches furniture a lot.', 'Kitten scratches furniture', 'Negative', '#FurnitureDamage,#Caution');
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('dave', 'Dog', 'The Labrador puppy has destroyed my home. In just one week, he chewed through two pairs of expensive sneakers and a wooden chair leg. I provide plenty of toys, but he prefers destroying my personal belongings.', 'Puppy is extremely destructive', 'Negative', '#Destructive,#Chewing');
+
+
+-- 2. CATS
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('english', 'Cat', 'My Persian cat is like a living cloud. She is so fluffy and soft. Every evening when I sit down to read a book, she quietly jumps on my lap and purrs until she falls asleep. A perfect indoor pet.', 'Persian cat is fluffy and quiet', 'Positive', '#Fluffy,#LapCat');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('japanese', 'Cat', 'I adopted a Manx, and he is basically a dog in a cat''s body. He follows me from room to room and even plays fetch with a small ball! The lack of a tail makes him look so unique and cute.', 'Manx cat acts like a dog', 'Positive', '#Social,#Playful');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('j2ee', 'Cat', 'I love her, but the shedding is out of control. I find white cat hair on my black clothes, in my coffee, and even in the fridge. She is a sweet cat, but if you have allergies or hate cleaning, stay away.', 'Excessive shedding is a problem', 'Neutral', '#Shedding,#Messy');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('alice', 'Cat', 'I bought three different expensive scratching posts, but this cat still prefers my vintage leather armchair. The leather is completely ruined with deep claw marks. I tried sprays and tapes, but nothing stops him.', 'Cat ruins furniture despite scratching posts', 'Negative', '#Scratching,#Destructive');
+
+
+-- 3. BIRDS
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('carol', 'Bird', 'This Amazon Parrot is the funniest pet I have ever owned. He learned to mimic the sound of the microwave and my laugh. We have actual conversations, and he loves dancing to music.', 'Parrot mimics sounds and dances', 'Positive', '#Funny,#Talking');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('dave', 'Bird', 'I got a pair of Finches, and watching them is better than TV. They are busy building their nest all day, and their soft chirping in the morning is so peaceful. They don''t like being held, but they are wonderful to watch.', 'Finches are peaceful and interesting', 'Positive', '#Relaxing');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('english', 'Bird', 'The Parrot is cool, but nobody warned me about the noise level. He starts screaming at the top of his lungs at sunrise (6 AM). It is nature''s alarm clock that you cannot turn off.', 'Parrot is extremely loud in the morning', 'Neutral', '#Noisy');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('j2ee', 'Bird', 'I tried to hand-feed the Parrot, and he bit my finger so hard it bled. He seems to hate everyone except my wife. He hisses whenever I walk by the cage. I am actually afraid of my own pet.', 'Parrot is aggressive and bites', 'Negative', '#Aggressive,#Biting');
+
+
+-- 4. FISH
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('alice', 'Fish', 'The Koi pond in my backyard has become my sanctuary. Feeding them by hand is such a meditative experience. They are huge, colorful, and seem to recognize me when I approach the water.', 'Koi pond provides stress relief', 'Positive', '#Beautiful,#StressRelief');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('bob', 'Fish', 'Goldfish are the perfect starter pet for my 5-year-old son. He named his fish "Captain Splash" and takes responsibility for feeding him every morning. Great way to teach responsibility.', 'Goldfish are great starter pets for kids', 'Positive', '#KidsFriendly,#EasyCare');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('carol', 'Fish', 'The Angelfish are stunning to look at, but they are bullies. They keep chasing and nipping at the smaller fish in my community tank. I eventually had to buy a tank divider to keep peace.', 'Angelfish are aggressive to others', 'Neutral', '#Aggressive');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('japanese', 'Fish', 'Do not put the Tiger Shark with other fish! The description said it was semi-aggressive, but it ate three of my neon tetras in one night. Now I have one fat shark and an empty tank.', 'Shark ate all other fish', 'Negative', '#Predator,#Loss');
+
+
+-- 5. REPTILES
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('j2ee', 'Reptile', 'I never thought a reptile could be affectionate, but my Iguana loves being scratched on the head. He sits on my shoulder while I work on the computer. A very cool and misunderstood pet.', 'Iguana is affectionate and cool', 'Positive', '#Cool');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('ACID', 'Reptile', 'The Rattlesnake is mesmerizing to watch. The patterns on its scales are like a work of art. I have created a desert-themed terrarium for him. Note: strictly for looking, not touching!', 'Snake is beautiful to watch', 'Positive', '#Beautiful,#Fascinating');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('alice', 'Reptile', 'The Lizard is okay, but honestly, he is basically a "pet rock". He hides under his log for 20 hours a day and doesn''t move. It is not very entertaining for guests or kids.', 'Lizard is inactive and boring', 'Neutral', '#Inactive,#Boring');
+
+INSERT INTO review (username, pet_type, content, summary, sentiment, tags) VALUES
+    ('dave', 'Reptile', 'Nightmare scenario! The Snake escaped its enclosure because the latch was loose. We couldn''t find him for two days. My wife refused to sleep in the house until we found him curled up in a shoe.', 'Snake escaped due to faulty cage', 'Negative', '#Escaped,#Scary');
