@@ -47,17 +47,14 @@ public class ReviewActionBean extends AbstractActionBean {
   private List<Review> reviewList;
   private Review review = new Review();
 
-  // 필터링 및 화면 표시를 위한 변수들
-  private String petType; // 사용자가 선택한 펫 종류
-  private String selectedTag; // 사용자가 클릭한 태그
+  // 필터 및 통계 데이터
+  private String petType;
+  private String selectedTag;
 
-  private double overallRating; // 5점 만점 평점
-  private String categorySummary; // 펫 종류별 요약 텍스트
-  private Set<String> uniqueTags; // 해당 펫 종류에 포함된 모든 태그 목록 (중복 제거)
+  private double overallRating;
+  private String categorySummary;
+  private Set<String> uniqueTags;
 
-  // -------------------------
-  // Getters / Setters
-  // -------------------------
   public List<Review> getReviewList() {
     return reviewList;
   }
@@ -98,7 +95,7 @@ public class ReviewActionBean extends AbstractActionBean {
     return uniqueTags;
   }
 
-  // 로그인 체크
+  // 인증 헬퍼 메서드
   private AccountActionBean getAccountBean() {
     HttpSession session = context.getRequest().getSession();
     return (AccountActionBean) session.getAttribute("accountBean");
@@ -113,31 +110,23 @@ public class ReviewActionBean extends AbstractActionBean {
     return isLoggedIn() ? getAccountBean().getAccount().getUsername() : null;
   }
 
-  // -------------------------
-  // Actions
-  // -------------------------
-
   @DefaultHandler
   public Resolution listReviews() {
-    // 1. 전체 리뷰 가져오기
     List<Review> allReviews = reviewService.getAllReviews();
 
-    // 2. 1차 필터링 (펫 종류만 고려) -> 통계 및 태그 추출의 기준 데이터
+    // 1차 필터링 (펫 종류)
     List<Review> filteredByPet = new ArrayList<>();
     for (Review r : allReviews) {
-      // 펫 타입이 선택되지 않았거나(전체), 일치하는 경우만 추가
       if (petType == null || petType.isEmpty() || r.getPetType().equalsIgnoreCase(petType)) {
         filteredByPet.add(r);
       }
     }
 
-    // 3. 통계 계산 (평점) & 요약 생성
+    // 통계(평점, AI 요약) 및 태그 추출 수행
     calculateStatistics(filteredByPet);
-
-    // 4. 태그 추출 (현재 필터된 리뷰들 내에서 등장하는 태그만 수집)
     extractTags(filteredByPet);
 
-    // 5. 2차 필터링 (태그 버튼 클릭 시) -> 실제 리스트에 뿌려질 데이터
+    // 2차 필터링 (태그 선택 시)
     if (selectedTag != null && !selectedTag.isEmpty()) {
       this.reviewList = filteredByPet.stream().filter(r -> r.getTags() != null && r.getTags().contains(selectedTag))
           .collect(Collectors.toList());
@@ -148,7 +137,6 @@ public class ReviewActionBean extends AbstractActionBean {
     return new ForwardResolution(REVIEW_LIST);
   }
 
-  // 평점 계산 및 요약 로직
   private void calculateStatistics(List<Review> reviews) {
     if (reviews.isEmpty()) {
       this.overallRating = 0.0;
@@ -156,30 +144,26 @@ public class ReviewActionBean extends AbstractActionBean {
       return;
     }
 
+    // 감정 분석 결과(Positive=5, Neutral=3, Negative=1)를 기반으로 평점 계산
     double totalScore = 0;
-    int positiveCount = 0;
-
     for (Review r : reviews) {
       String sentiment = r.getSentiment();
       if ("Positive".equalsIgnoreCase(sentiment)) {
         totalScore += 5.0;
-        positiveCount++;
       } else if ("Neutral".equalsIgnoreCase(sentiment)) {
         totalScore += 3.0;
-      } else { // Negative
+      } else {
         totalScore += 1.0;
       }
     }
 
-    // 소수점 한자리까지 반올림
     this.overallRating = Math.round((totalScore / reviews.size()) * 10.0) / 10.0;
 
-    // AI 요약 생성 호출
+    // AI 요약 서비스 호출
     String currentPetType = (petType == null || petType.isEmpty()) ? "All Pets" : petType;
     this.categorySummary = reviewService.getAiSummaryForCategory(currentPetType, reviews);
   }
 
-  // 태그 추출 로직
   private void extractTags(List<Review> reviews) {
     this.uniqueTags = new HashSet<>();
     for (Review r : reviews) {
@@ -200,40 +184,31 @@ public class ReviewActionBean extends AbstractActionBean {
     return new ForwardResolution(NEW_REVIEW);
   }
 
-  /**
-   * 리뷰 등록 (작성자 강제 주입)
-   */
   public Resolution addReview() {
     if (!isLoggedIn()) {
       return new RedirectResolution(AccountActionBean.class, "signonForm");
     }
 
-    // 폼에서 넘어온 데이터 대신, 세션의 ID를 사용 (보안 강화)
+    // 보안을 위해 세션의 사용자 ID를 강제로 주입
     review.setUsername(getLoggedInUsername());
 
     reviewService.addReview(review);
-    review = new Review(); // 초기화
+    review = new Review();
     return new RedirectResolution(ReviewActionBean.class, "listReviews");
   }
 
-  /**
-   * 리뷰 삭제 (본인 확인 추가)
-   */
   public Resolution deleteReview() {
-    // 1. 로그인 체크
     if (!isLoggedIn()) {
       setMessage("You must be signed in to delete a review.");
       return new RedirectResolution(AccountActionBean.class, "signonForm");
     }
 
-    // 2. 삭제하려는 리뷰 정보 가져오기 (DB 조회)
     Review targetReview = reviewService.getReview(review.getReviewId());
 
-    // 3. 권한 체크 (내 글인지 확인)
+    // 본인 작성글인지 권한 확인
     String currentUser = getLoggedInUsername();
     if (targetReview != null && currentUser.equals(targetReview.getUsername())) {
       reviewService.deleteReview(review.getReviewId());
-      setMessage("Review deleted successfully.");
     } else {
       setMessage("You can only delete your own reviews.");
     }
@@ -241,16 +216,13 @@ public class ReviewActionBean extends AbstractActionBean {
     return new RedirectResolution(ReviewActionBean.class, "listReviews");
   }
 
-  // 리뷰 수정
   public Resolution editReviewForm() {
-    // 1. 로그인 체크
     if (!isLoggedIn())
       return new RedirectResolution(AccountActionBean.class, "signonForm");
 
-    // 2. 수정할 리뷰 가져오기
     review = reviewService.getReview(review.getReviewId());
 
-    // 3. 본인 글인지 확인
+    // 본인 작성글인지 권한 확인
     String currentUser = getLoggedInUsername();
     if (review == null || !currentUser.equals(review.getUsername())) {
       setMessage("You can only edit your own reviews.");
@@ -260,22 +232,18 @@ public class ReviewActionBean extends AbstractActionBean {
     return new ForwardResolution(EDIT_REVIEW);
   }
 
-  /**
-   * [추가] 리뷰 수정 실행
-   */
   public Resolution updateReview() {
     if (!isLoggedIn())
       return new RedirectResolution(AccountActionBean.class, "signonForm");
 
-    // 본인 확인 로직 (안전을 위해 한 번 더 체크)
     Review original = reviewService.getReview(review.getReviewId());
+
+    // 본인 확인 후 수정 실행 (작성자 ID 보존)
     if (original != null && getLoggedInUsername().equals(original.getUsername())) {
-      // 작성자는 변경되지 않도록 원본 데이터나 세션 ID 유지
       review.setUsername(getLoggedInUsername());
       reviewService.updateReview(review);
     }
 
     return new RedirectResolution(ReviewActionBean.class, "listReviews");
   }
-
 }

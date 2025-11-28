@@ -15,7 +15,6 @@
        limitations under the License.
 
 --%>
-<%-- File: /WEB-INF/jsp/review/ReviewList.jsp --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ include file="../common/IncludeTop.jsp"%>
 

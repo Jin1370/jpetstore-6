@@ -21,12 +21,8 @@
 
 <mapper namespace="org.mybatis.jpetstore.mapper.ReviewMapper">
 
-    <!-- Enable MyBatis Second-Level Cache -->
     <cache />
 
-    <!-- ============================= -->
-    <!--   SELECT: Single Review by ID -->
-    <!-- ============================= -->
     <select id="getReview" resultType="Review">
         SELECT
         review_id AS reviewId,
@@ -41,10 +37,6 @@
         WHERE review_id = #{reviewId}
     </select>
 
-
-    <!-- ============================= -->
-    <!--   SELECT: getAllReviews         -->
-    <!-- ============================= -->
     <select id="getAllReviews" resultType="Review">
         SELECT
         review_id AS reviewId,
@@ -59,10 +51,6 @@
         ORDER BY created_date DESC
     </select>
 
-
-    <!-- ============================= -->
-    <!--   INSERT: New Review          -->
-    <!-- ============================= -->
     <insert id="addReview" parameterType="Review" useGeneratedKeys="true" keyProperty="reviewId">
         INSERT INTO review
         (username, pet_type, content, summary, sentiment, tags)
@@ -70,22 +58,6 @@
         (#{username}, #{petType}, #{content}, #{summary}, #{sentiment}, #{tags})
     </insert>
 
-
-    <!-- ============================= -->
-    <!--   UPDATE: Review Summary/AI   -->
-    <!-- ============================= -->
-    <update id="updateReviewAI" parameterType="Review">
-        UPDATE review SET
-        summary = #{summary},
-        sentiment = #{sentiment},
-        tags = #{tags}
-        WHERE review_id = #{reviewId}
-    </update>
-
-
-    <!-- ============================= -->
-    <!--   DELETE: Review              -->
-    <!-- ============================= -->
     <delete id="deleteReview" parameterType="int">
         DELETE FROM review
         WHERE review_id = #{reviewId}

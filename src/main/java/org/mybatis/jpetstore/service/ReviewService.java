@@ -40,17 +40,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewService {
 
   private final ReviewMapper reviewMapper;
-  private final ObjectMapper objectMapper; // JSON 파싱용
-  private final HttpClient httpClient; // HTTP 요청용
+  private final ObjectMapper objectMapper;
+  private final HttpClient httpClient;
 
-  // application.properties에서 값 주입
+  // application.properties에서 API Key와 모델 정보를 주입받음
   @Value("${openai.api.key}")
   private String apiKey;
 
   @Value("${openai.model:gpt-3.5-turbo}")
   private String model;
 
-  // 메모리 캐시 (Key: 펫종류, Value: 요약문)
+  // API 호출 비용 절감을 위한 간단한 인메모리 캐시 (Key: 펫종류, Value: 요약문)
   private final Map<String, String> categorySummaryCache = new ConcurrentHashMap<>();
 
   public ReviewService(ReviewMapper reviewMapper) {
@@ -72,22 +72,20 @@ public class ReviewService {
       return "No reviews available for analysis.";
     }
 
-    // 캐시에 저장된 요약이 있으면 사용
+    // 캐시 히트 시 API 호출 없이 리턴
     if (categorySummaryCache.containsKey(petType)) {
       return categorySummaryCache.get(petType);
     }
 
     try {
-      // 리뷰 내용 합치기 (최신 10개만)
-      String combinedReviews = reviews.stream().limit(10)
-          .map(r -> "- " + r.getContent()).collect(Collectors.joining("\n"));
+      String combinedReviews = reviews.stream().limit(10).map(r -> "- " + r.getContent())
+          .collect(Collectors.joining("\n"));
 
       String prompt = String.format(
           "Here are some reviews for '%s'. Summarize the overall user feedback in 1-2 sentences in English. "
               + "Highlight common pros and cons if any. " + "Do NOT use JSON format, just plain text.\n\nReviews:\n%s",
           petType, combinedReviews);
 
-      // OpenAI 호출
       String aiSummary = callOpenAiForText(prompt);
       categorySummaryCache.put(petType, aiSummary);
       return aiSummary;
@@ -126,18 +124,18 @@ public class ReviewService {
   @Transactional
   public void addReview(Review review) {
     try {
-      // 1. OpenAI API를 호출하여 분석 데이터 가져오기
+      // DB 저장 전 AI 분석 수행 (요약, 감정, 태그 생성)
       analyzeReviewWithAI(review);
     } catch (Exception e) {
-      // AI 분석 실패 시 로그를 남기고 기본값 설정 (저장은 막지 않음)
       e.printStackTrace();
       review.setSummary("Summary unavailable (AI Error)");
       review.setSentiment("Neutral");
       review.setTags("");
     }
 
-    // 2. 데이터베이스에 저장
     reviewMapper.addReview(review);
+
+    // 데이터 변경 시 관련 캐시 초기화
     categorySummaryCache.remove(review.getPetType());
     categorySummaryCache.remove("All Pets");
   }
@@ -145,7 +143,6 @@ public class ReviewService {
   private void analyzeReviewWithAI(Review review) throws Exception {
     String apiUrl = "https://api.openai.com/v1/chat/completions";
 
-    // 프롬프트 작성
     String prompt = String.format(
         "Analyze the following pet store review for a '%s'. " + "Return a JSON object with strictly these three keys: "
             + "'summary' (a brief summary in English, max 15 words), "
@@ -153,43 +150,32 @@ public class ReviewService {
             + "and 'tags' (max 2 comma-separated keywords in English, EACH starting with '#', like '#Cute,#Active'). "
             + "IMPORTANT: Do NOT include the pet type ('%s') itself as a tag. "
             + "Do not include Markdown formatting (```json). " + "\n\nReview Content: \"%s\"",
-        review.getPetType(), // 첫 번째 %s: 문맥 제공
-        review.getPetType(), // 두 번째 %s: 태그 제외 대상 지정
-        review.getContent() // 세 번째 %s: 리뷰 본문
-    );
+        review.getPetType(), review.getPetType(), review.getContent());
 
-    // 요청 바디 생성 (JSON)
-    ObjectNode rootNode = objectMapper.createObjectNode(); // [1] 첫 번째 rootNode (요청용)
+    ObjectNode rootNode = objectMapper.createObjectNode();
     rootNode.put("model", model);
 
-    // "messages" 배열 노드 생성
     ArrayNode messagesArray = rootNode.putArray("messages");
 
-    // 배열 안에 객체 추가
     ObjectNode messageNode = messagesArray.addObject();
     messageNode.put("role", "user");
     messageNode.put("content", prompt);
 
-    // 최종 JSON 문자열 변환
     String requestBody = rootNode.toString();
 
-    // HTTP 요청 생성
     HttpRequest request = HttpRequest.newBuilder().uri(URI.create(apiUrl)).header("Content-Type", "application/json")
         .header("Authorization", "Bearer " + apiKey).POST(HttpRequest.BodyPublishers.ofString(requestBody)).build();
 
-    // API 전송 및 응답 수신
     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
     if (response.statusCode() == 200) {
-      // 응답 파싱: 여기서 변수명을 responseNode로 변경하여 충돌 해결
-      JsonNode responseNode = objectMapper.readTree(response.body()); // [2] 이름 변경됨
+      JsonNode responseNode = objectMapper.readTree(response.body());
 
       String contentJson = responseNode.path("choices").get(0).path("message").path("content").asText();
 
-      // AI가 가끔 ```json ... ``` 형태로 줄 수 있으므로 제거 처리
+      // AI 응답에 포함될 수 있는 마크다운 문법 제거
       contentJson = contentJson.replace("```json", "").replace("```", "").trim();
 
-      // 결과 JSON 파싱하여 Review 객체에 세팅
       JsonNode resultNode = objectMapper.readTree(contentJson);
 
       if (resultNode.has("summary"))
@@ -206,36 +192,29 @@ public class ReviewService {
 
   @Transactional
   public void deleteReview(int reviewId) {
-    // 삭제할 리뷰의 정보를 먼저 알아야 어떤 캐시를 지울지 알 수 있음
     Review target = reviewMapper.getReview(reviewId);
 
     if (target != null) {
       reviewMapper.deleteReview(reviewId);
 
-      // ⭐ [추가] 캐시 초기화
-      // 삭제된 리뷰의 카테고리 캐시 삭제
+      // 데이터 삭제 시 캐시 초기화
       categorySummaryCache.remove(target.getPetType());
-
-      // 전체 요약 캐시 삭제
       categorySummaryCache.remove("All Pets");
     }
   }
 
-  // 리뷰 수정
   @Transactional
   public void updateReview(Review review) {
-    // 1. 내용이 바뀌었으므로 AI 재분석 수행
     try {
+      // 내용 수정 시 AI 재분석 수행
       analyzeReviewWithAI(review);
     } catch (Exception e) {
       e.printStackTrace();
-      // 에러 시 기존 AI 데이터라도 유지하거나 초기화
     }
 
-    // 2. DB 업데이트
     reviewMapper.updateReview(review);
 
-    // 3. 캐시 초기화 (내용이 바뀌었으므로)
+    // 데이터 수정 시 캐시 초기화
     categorySummaryCache.remove(review.getPetType());
     categorySummaryCache.remove("All Pets");
   }
