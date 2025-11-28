@@ -128,6 +128,16 @@
                                     </c:forTokens>
                                 </div>
                             </c:if>
+                            <c:if test="${not empty sessionScope.accountBean.account.username and sessionScope.accountBean.account.username == review.username}">
+                                <div style="margin-top: 10px;">
+                                    <stripes:link beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean" event="deleteReview"
+                                                  onclick="return confirm('Are you sure you want to delete this review?');"
+                                                  style="color: red; font-size: 0.85em; text-decoration: underline;">
+                                        <stripes:param name="review.reviewId" value="${review.reviewId}"/>
+                                        [Delete]
+                                    </stripes:link>
+                                </div>
+                            </c:if>
                         </td>
 
                         <td style="text-align:center;">

@@ -63,7 +63,7 @@
     <!-- ============================= -->
     <!--   INSERT: New Review          -->
     <!-- ============================= -->
-    <insert id="insertReview" parameterType="Review" useGeneratedKeys="true" keyProperty="reviewId">
+    <insert id="addReview" parameterType="Review" useGeneratedKeys="true" keyProperty="reviewId">
         INSERT INTO review
         (username, pet_type, content, summary, sentiment, tags)
         VALUES

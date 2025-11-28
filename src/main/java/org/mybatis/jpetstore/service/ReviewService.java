@@ -44,7 +44,7 @@ public class ReviewService {
    */
   @Transactional
   public void addReview(Review review) {
-    reviewMapper.insertReview(review);
+    reviewMapper.addReview(review);
   }
 
   /**

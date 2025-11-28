@@ -28,7 +28,7 @@ public interface ReviewMapper {
   Review getReview(int reviewId);
 
   // 리뷰 등록
-  void insertReview(Review review);
+  void addReview(Review review);
 
   // 리뷰 삭제
   void deleteReview(int reviewId);

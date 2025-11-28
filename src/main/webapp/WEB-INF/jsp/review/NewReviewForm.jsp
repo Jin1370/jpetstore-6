@@ -34,7 +34,7 @@
             <tr>
                 <td>Username:</td>
                 <td>
-                    <stripes:text name="review.username" size="20" />
+                    ${sessionScope.accountBean.account.username}
                 </td>
             </tr>
             <tr>

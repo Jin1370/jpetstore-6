@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpSession;
+
 import net.sourceforge.stripes.action.DefaultHandler;
 import net.sourceforge.stripes.action.ForwardResolution;
 import net.sourceforge.stripes.action.RedirectResolution;
@@ -47,7 +49,6 @@ public class ReviewActionBean extends AbstractActionBean {
   // 필터링 및 화면 표시를 위한 변수들
   private String petType; // 사용자가 선택한 펫 종류
   private String selectedTag; // 사용자가 클릭한 태그
-  // keyword 삭제됨
 
   private double overallRating; // 5점 만점 평점
   private String categorySummary; // 펫 종류별 요약 텍스트
@@ -94,6 +95,21 @@ public class ReviewActionBean extends AbstractActionBean {
 
   public Set<String> getUniqueTags() {
     return uniqueTags;
+  }
+
+  // 로그인 체크
+  private AccountActionBean getAccountBean() {
+    HttpSession session = context.getRequest().getSession();
+    return (AccountActionBean) session.getAttribute("accountBean");
+  }
+
+  private boolean isLoggedIn() {
+    AccountActionBean accountBean = getAccountBean();
+    return accountBean != null && accountBean.isAuthenticated();
+  }
+
+  private String getLoggedInUsername() {
+    return isLoggedIn() ? getAccountBean().getAccount().getUsername() : null;
   }
 
   // -------------------------
@@ -177,12 +193,51 @@ public class ReviewActionBean extends AbstractActionBean {
   }
 
   public Resolution newReviewForm() {
+    if (!isLoggedIn()) {
+      setMessage("Please sign in to write a review.");
+      return new RedirectResolution(AccountActionBean.class, "signonForm");
+    }
     return new ForwardResolution(NEW_REVIEW);
   }
 
+  /**
+   * 리뷰 등록 (작성자 강제 주입)
+   */
   public Resolution addReview() {
+    if (!isLoggedIn()) {
+      return new RedirectResolution(AccountActionBean.class, "signonForm");
+    }
+
+    // 폼에서 넘어온 데이터 대신, 세션의 ID를 사용 (보안 강화)
+    review.setUsername(getLoggedInUsername());
+
     reviewService.addReview(review);
-    review = new Review();
+    review = new Review(); // 초기화
+    return new RedirectResolution(ReviewActionBean.class, "listReviews");
+  }
+
+  /**
+   * 리뷰 삭제 (본인 확인 추가)
+   */
+  public Resolution deleteReview() {
+    // 1. 로그인 체크
+    if (!isLoggedIn()) {
+      setMessage("You must be signed in to delete a review.");
+      return new RedirectResolution(AccountActionBean.class, "signonForm");
+    }
+
+    // 2. 삭제하려는 리뷰 정보 가져오기 (DB 조회)
+    Review targetReview = reviewService.getReview(review.getReviewId());
+
+    // 3. 권한 체크 (내 글인지 확인)
+    String currentUser = getLoggedInUsername();
+    if (targetReview != null && currentUser.equals(targetReview.getUsername())) {
+      reviewService.deleteReview(review.getReviewId());
+      setMessage("Review deleted successfully.");
+    } else {
+      setMessage("You can only delete your own reviews.");
+    }
+
     return new RedirectResolution(ReviewActionBean.class, "listReviews");
   }
 }
