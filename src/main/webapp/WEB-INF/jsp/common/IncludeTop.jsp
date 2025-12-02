@@ -33,7 +33,7 @@
 
     <title>JPetStore Demo</title>
 
-    <meta content="text/html; charset=windows-1252" http-equiv="Content-Type" />
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
     <meta http-equiv="Cache-Control" content="max-age=0" />
     <meta http-equiv="Cache-Control" content="no-cache" />
     <meta http-equiv="expires" content="0" />

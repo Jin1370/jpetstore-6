@@ -26,7 +26,8 @@
 
 <div id="Catalog">
 
-    <stripes:form beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean">
+    <stripes:form beanclass="org.mybatis.jpetstore.web.actions.ReviewActionBean"
+                  onsubmit="return validateReview();">
 
         <h3>Write a New Review</h3>
 
@@ -60,6 +61,18 @@
         <div style="margin-top: 10px; margin-bottom: 20px;">
             <stripes:submit name="addReview" value="Submit Review" />
         </div>
+
+        <script>
+        function validateReview() {
+            var content = document.getElementsByName('review.content')[0].value.trim();
+
+            if (!content) {
+                alert('Please enter review content.');
+                return false;
+            }
+            return true;
+        }
+        </script>
 
     </stripes:form>
 

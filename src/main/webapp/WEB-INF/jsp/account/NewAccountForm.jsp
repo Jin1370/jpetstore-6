@@ -1,6 +1,6 @@
 <%--
 
-       Copyright 2010-2023 the original author or authors.
+       Copyright 2010-2025 the original author or authors.
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 <div id="Catalog"><stripes:form
 	beanclass="org.mybatis.jpetstore.web.actions.AccountActionBean"
-	focus="">
+    focus="" onsubmit="return validateForm();">
 
 	<h3>User Information</h3>
 
@@ -41,6 +41,34 @@
 	<%@ include file="IncludeAccountFields.jsp"%>
 
 	<stripes:submit name="newAccount" value="Save Account Information" />
+
+<script>
+function validateForm() {
+    var username = document.getElementsByName('username')[0].value.trim();
+    var password = document.getElementsByName('password')[0].value.trim();
+    var repeatedPassword = document.getElementsByName('repeatedPassword')[0].value.trim();
+    var firstName = document.getElementsByName('account.firstName')[0].value.trim();
+    var lastName = document.getElementsByName('account.lastName')[0].value.trim();
+    var email = document.getElementsByName('account.email')[0].value.trim();
+    var phone = document.getElementsByName('account.phone')[0].value.trim();
+    var address1 = document.getElementsByName('account.address1')[0].value.trim();
+    var city = document.getElementsByName('account.city')[0].value.trim();
+    var state = document.getElementsByName('account.state')[0].value.trim();
+    var zip = document.getElementsByName('account.zip')[0].value.trim();
+    var country = document.getElementsByName('account.country')[0].value.trim();
+
+    if (!username || !password || !repeatedPassword || !firstName || !lastName ||
+        !email || !phone || !address1 || !city || !state || !zip || !country) {
+        alert('Please fill in all required fields.');
+        return false;
+    }
+    if (password !== repeatedPassword) {
+        alert('Passwords do not match.');
+        return false;
+    }
+    return true;
+}
+</script>
 
 </stripes:form></div>
 
